@@ -1,0 +1,8 @@
+/dist
+/dist-newstyle
+/node_modules
+/tidal-gui-linux-x64
+/static/definitions/*
+/resources
+
+out/
