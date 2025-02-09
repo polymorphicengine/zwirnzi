@@ -19,7 +19,7 @@ runListener :: Environment -> IO ()
 runListener env = do
   eithenv <- runCI env listen
   case eithenv of
-    Left (CIError err newEnv) -> print err >> runListener newEnv
+    Left (CIError err newEnv) -> putStrLn err >> runListener newEnv
     Right _ -> runListener env
 
 listen :: CI ()

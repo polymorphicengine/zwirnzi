@@ -35,10 +35,11 @@ import qualified Sound.Tidal.Clock as Clock (ClockConfig (..), defaultConfig)
 import System.Directory.OsPath
 import System.File.OsPath as F
 import System.OsPath
+import qualified Zwirn.Language.Compiler as Compiler
 import Zwirn.Stream
 
 defaultConfigFile :: B.ByteString
-defaultConfigFile = $(embedFile "zwirn-ci-config.yaml")
+defaultConfigFile = $(embedFile "zwirnzi-config.yaml")
 
 data ClockConfig = ClockConfig
   { clockConfigQuantum :: Double,
@@ -53,7 +54,9 @@ data ClockConfig = ClockConfig
 data CiConfig = CiConfig
   { ciConfigBootPath :: FilePath,
     ciConfigDocumentation :: Bool,
-    ciConfigListener :: Bool
+    ciConfigListener :: Bool,
+    ciConfigOverwriteBuiltin :: Bool,
+    ciConfigDynamicTypes :: Bool
   }
   deriving (Generic)
 
@@ -65,7 +68,7 @@ data FullConfig = FullConfig
   deriving (Generic)
 
 instance DefaultConfig CiConfig where
-  configDef = CiConfig "" False False
+  configDef = CiConfig "" False False False False
 
 instance DefaultConfig StreamConfig where
   configDef = StreamConfig 57120 57110 "127.0.0.1"
@@ -105,6 +108,9 @@ fromClock (Clock.ClockConfig a b c d e f) = ClockConfig (realToFrac a) (realToFr
 
 toClock :: ClockConfig -> Clock.ClockConfig
 toClock (ClockConfig a b c d e f) = Clock.ClockConfig (realToFrac a) (realToFrac b) c d (fromIntegral e) f
+
+toCiConfig :: CiConfig -> Compiler.CiConfig
+toCiConfig (CiConfig _ _ _ x y) = Compiler.CiConfig x y
 
 configPath :: IO String
 configPath = do

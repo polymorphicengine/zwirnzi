@@ -18,20 +18,20 @@ module CI.Setup (setup) where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import CI.Config
+import CI.Config as C
 import Control.Concurrent.MVar (newMVar)
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import System.Directory.OsPath
 import System.OsPath
 import Zwirn.Language.Builtin.Prelude
-import Zwirn.Language.Compiler
+import Zwirn.Language.Compiler as Compiler
 import Zwirn.Stream
 
 setup :: FullConfig -> IO Environment
 setup config = do
   str <- setupStream config
-  let initE = getInitialEnv str
+  let initE = getInitialEnv (toCiConfig $ fullConfigCi config) str
   checkBoot (fullConfigCi config) initE
 
 setupStream :: FullConfig -> IO Stream
@@ -40,12 +40,12 @@ setupStream config = do
   m <- newMVar Map.empty
   startStream (fullConfigStream config) mv m (toClock $ fullConfigClock config)
 
-getInitialEnv :: Stream -> Environment
-getInitialEnv str = Environment str builtinEnvironment (Just $ ConfigEnv configPath resetConfig) Nothing
+getInitialEnv :: Compiler.CiConfig -> Stream -> Environment
+getInitialEnv config str = Environment str builtinEnvironment (Just $ ConfigEnv configPath resetConfig) Nothing config
 
-checkBoot :: CiConfig -> Environment -> IO Environment
-checkBoot (CiConfig "" _ _) env = return env
-checkBoot (CiConfig path _ _) env = do
+checkBoot :: C.CiConfig -> Environment -> IO Environment
+checkBoot (C.CiConfig "" _ _ _ _) env = return env
+checkBoot (C.CiConfig path _ _ _ _) env = do
   ospath <- encodeUtf path
   isfile <- doesFileExist ospath
   ps <-

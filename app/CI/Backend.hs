@@ -29,7 +29,7 @@ runZwirnCI :: Environment -> ZwirnCI () -> IO ()
 runZwirnCI env x = do
   ci <- runCI env (runInputT defaultSettings x)
   case ci of
-    Left (CIError err envv) -> print err >> runZwirnCI envv x
+    Left (CIError err envv) -> putStrLn err >> runZwirnCI envv x
     Right _ -> return ()
 
 evalInput :: ZwirnCI ()

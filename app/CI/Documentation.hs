@@ -17,7 +17,7 @@ generateDocumentation = do
   curr <- getCurrentDirectory
   path <- (curr <>) <$> encodeUtf "/zwirn-docs.md"
   decoded <- decodeUtf path
-  print ("Generating documentation in: " ++ decoded)
+  putStrLn ("Generating documentation in: " ++ decoded)
   F.writeFile path (T.encodeUtf8 $ T.pack documentation)
 
 documentation :: String
