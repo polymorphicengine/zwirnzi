@@ -9,7 +9,7 @@ build-type:         Simple
 extra-doc-files:    README.md
 
 
-executable zwirn-ci
+executable zwirnzi
     main-is:          Main.hs
     other-modules:    CI.Backend
                       CI.Setup

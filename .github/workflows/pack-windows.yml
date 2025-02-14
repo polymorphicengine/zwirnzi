@@ -1,0 +1,57 @@
+name: Windows CI
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        ghc: ["9.8.2"]
+        cabal: ["3.10.3.0"]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Setup Haskell
+        uses: haskell-actions/setup@v2
+        id: setup-haskell-cabal
+        with:
+          ghc-version: ${{ matrix.ghc }}
+          cabal-version: ${{ matrix.cabal }}
+
+      - name: Freeze
+        run: |
+          cabal freeze
+      - name: Cache cabal
+        uses: actions/cache@v2
+        id: cache-cabal
+        with:
+          path: 'C:\sr'
+          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('D:\a\zwirnzi\zwirnzi\app\') }}-a
+
+      - name: Cache dist
+        uses: actions/cache@v2
+        id: cache-bin
+        with:
+          path: 'D:\a\tidal-gui\tidal-gui\dist-newstyle\'
+          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('D:\a\zwirnzi\zwirnzi\app\') }}-b
+
+      - name: cabal build
+        run: cabal v2-build --enable-executable-stripping 
+
+      - name: create dir
+        run: New-Item -Path 'D:\a\zwirnzi\zwirnzi\build' -type directory
+
+      - name: move executable
+        run: Move-Item -Path 'D:\a\zwirnzi\zwirnzi\dist-newstyle\build\x86_64-windows\ghc-${{ matrix.ghc }}\zwirnzi-0.1.0.0\x\zwirnzi\build\zwirnzi\zwirnzi.exe' -Destination 'D:\a\zwirnzi\zwirnzi\build\zwirnzi.exe'
+
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/zwirnzi.exe

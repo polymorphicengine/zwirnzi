@@ -1,0 +1,58 @@
+name: Mac-CI
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    runs-on: macOS-latest
+    strategy:
+      matrix:
+        ghc: ["9.8.2"]
+        cabal: ["3.10.3.0"]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Setup Haskell
+        uses: haskell/actions/setup@v1
+        id: setup-haskell-cabal
+        with:
+          ghc-version: ${{ matrix.ghc }}
+          cabal-version: ${{ matrix.cabal }}
+
+      - name: Freeze
+        run: |
+          cabal freeze
+      - name: Cache cabal
+        uses: actions/cache@v2
+        id: cache-cabal
+        with:
+          path: "~/.cabal"
+          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('/Users/runner/work/zwirnzi/zwirnzi/app') }}-a
+
+      - name: Cache dist
+        uses: actions/cache@v2
+        id: cache-bin
+        with:
+          path: "/dist-newstyle/"
+          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('/Users/runner/work/zwirnzi/zwirnzi/app') }}-b
+
+      - name: cabal update and build
+        run: |
+          cabal update
+          cabal v2-build --enable-executable-stripping 
+
+      - name: make directory
+        run: mkdir build
+
+      - name: move executable
+        run: mv dist-newstyle/build/x86_64-osx/ghc-${{ matrix.ghc }}/zwirnzi-0.1.0.0/x/zwirnzi/build/zwirnzi/zwirnzi build/zwirnzi
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/zwirnzi
