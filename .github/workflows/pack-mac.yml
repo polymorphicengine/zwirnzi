@@ -50,9 +50,9 @@ jobs:
         run: mkdir build
 
       - name: move executable
-        run: mv dist-newstyle/build/x86_64-osx/ghc-${{ matrix.ghc }}/zwirnzi-0.1.0.0/x/zwirnzi/build/zwirnzi/zwirnzi build/zwirnzi
+        run: mv dist-newstyle/build/x86_64-osx/ghc-${{ matrix.ghc }}/zwirnzi-0.1.0.0/x/zwirnzi/build/zwirnzi/zwirnzi build/zwirnzi-macos
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: build/zwirnzi
+          files: build/zwirnzi-macos
