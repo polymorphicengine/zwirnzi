@@ -90,8 +90,8 @@ instance FromConfig FullConfig
 getConfig :: IO Conf.Config
 getConfig = do
   home <- getHomeDirectory
-  configDirPath <- (home <>) <$> encodeUtf "/.config/zwirn-ci/"
-  path <- (home <>) <$> encodeUtf "/.config/zwirn-ci/config.yaml"
+  configDirPath <- (home <>) <$> encodeUtf "/.config/zwirnzi/"
+  path <- (home <>) <$> encodeUtf "/.config/zwirnzi/config.yaml"
   createDirectoryIfMissing True configDirPath
   exists <- doesFileExist path
   unless exists (F.writeFile path (B.fromStrict defaultConfigFile))
@@ -99,7 +99,7 @@ getConfig = do
   mkConfig'
     []
     [ Cli.fromConfig,
-      Env.fromConfig "zwirn",
+      Env.fromConfig "zwirnzi",
       Yaml.fromFilePath decoded
     ]
 
@@ -115,7 +115,7 @@ toCiConfig (CiConfig _ _ _ x y) = Compiler.CiConfig x y
 configPath :: IO String
 configPath = do
   home <- getHomeDirectory
-  path <- (home <>) <$> encodeUtf "/.config/zwirn-ci/config.yaml"
+  path <- (home <>) <$> encodeUtf "/.config/zwirnzi/config.yaml"
   exists <- doesFileExist path
   decoded <- decodeUtf path
   if exists then return decoded else return "Config file not found!"
@@ -123,8 +123,8 @@ configPath = do
 resetConfig :: IO String
 resetConfig = do
   home <- getHomeDirectory
-  configDirPath <- (home <>) <$> encodeUtf "/.config/zwirn-ci/"
-  path <- (home <>) <$> encodeUtf "/.config/zwirn-ci/config.yaml"
+  configDirPath <- (home <>) <$> encodeUtf "/.config/zwirnzi/"
+  path <- (home <>) <$> encodeUtf "/.config/zwirnzi/config.yaml"
   createDirectoryIfMissing True configDirPath
   F.writeFile path (B.fromStrict defaultConfigFile)
   return "Restored default config."

@@ -4,5 +4,6 @@
 /tidal-gui-linux-x64
 /static/definitions/*
 /resources
+cabal.project.local
 
 out/
