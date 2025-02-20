@@ -41,7 +41,7 @@ setupStream config = do
   startStream (fullConfigStream config) mv m (toClock $ fullConfigClock config)
 
 getInitialEnv :: Compiler.CiConfig -> Stream -> Environment
-getInitialEnv config str = Environment str builtinEnvironment (Just $ ConfigEnv configPath resetConfig) Nothing config
+getInitialEnv config str = Environment str builtinEnvironment (Just $ ConfigEnv configPath resetConfig) Nothing config Nothing
 
 checkBoot :: C.CiConfig -> Environment -> IO Environment
 checkBoot (C.CiConfig "" _ _ _ _) env = return env
