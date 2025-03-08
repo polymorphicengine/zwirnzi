@@ -36,7 +36,7 @@ main = do
   when (ciConfigDocumentation $ fullConfigCi fullConfig) generateDocumentation
   env <- setup fullConfig
   if listenerMode fullConfig
-    then listenerStartMessage >> runListener env
+    then listenerStartMessage >> listen env
     else runZwirnCI env evalInputLoop
 
 listenerMode :: FullConfig -> Bool

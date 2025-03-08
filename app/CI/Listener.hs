@@ -1,6 +1,6 @@
 module CI.Listener where
 
-import Control.Monad.State (gets)
+import Control.Monad.State (get)
 import Data.Bifunctor (first)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
@@ -13,44 +13,43 @@ import Zwirn.Stream (sLocal)
 type RemoteAddress = N.SockAddr
 
 listenerStartMessage :: IO ()
-listenerStartMessage = putStrLn "Starting Listener.. listening for messages on port 2323"
+listenerStartMessage = putStrLn "Listening for messages on port 2323"
 
-runListener :: Environment -> IO ()
-runListener env = do
-  eithenv <- runCI env listen
-  case eithenv of
-    Left (CIError err newEnv) -> putStrLn err >> runListener newEnv
-    Right _ -> runListener env
+listen :: Environment -> IO ()
+listen env = recvMessageFrom (getUdp env) >>= act env >> listen env
 
-listen :: CI ()
-listen = recvMessageFrom >>= act >> listen
+recvMessageFrom :: O.Udp -> IO (Maybe Message, RemoteAddress)
+recvMessageFrom udp = fmap (first packet_to_message) (recvFrom udp)
 
-recvMessageFrom :: CI (Maybe Message, RemoteAddress)
-recvMessageFrom = getUdp >>= \udp -> liftIO $ fmap (first packet_to_message) (recvFrom udp)
+act :: Environment -> (Maybe O.Message, RemoteAddress) -> IO Environment
+act env (Just (Message "/ping" []), remote) = putStrLn "ping" >> replyOk (getUdp env) remote >> return env
+act env (Just (Message "/eval" [AsciiString stat]), remote) = do
+  putStrLn $ "Evaluating: " ++ ascii_to_string stat
+  x <- runCI env $ listenerCompiler (ascii_to_string stat)
+  case x of
+    Left (CIError err newEnv) -> replyEvalError (getUdp env) remote err >> return newEnv
+    Right ("", newEnv) -> replyEvalOk (getUdp env) remote >> return newEnv
+    Right (s, newEnv) -> replyEvalVal (getUdp env) remote s >> return newEnv
+act env (Just m, remote) = replyError (getUdp env) remote ("Unhandeled Message: " ++ show m) >> return env
+act env _ = return env
 
-act :: (Maybe O.Message, RemoteAddress) -> CI ()
-act (Just (Message "/ping" []), remote) = replyOK remote
-act (Just (Message "/eval" [AsciiString stat]), remote) = compilerInterpreterBasic (T.pack (ascii_to_string stat)) >>= \s -> if null s then replyOK remote else replyOKVal remote s
-act (Just m, remote) = replyError remote ("Unhandeled Message: " ++ show m)
-act _ = return ()
+reply :: O.Udp -> RemoteAddress -> O.Packet -> IO ()
+reply udp remote msg = O.sendTo udp msg remote
 
-reply :: RemoteAddress -> O.Packet -> CI ()
-reply remote msg = getUdp >>= \local -> liftIO $ O.sendTo local msg remote
+replyOk :: O.Udp -> RemoteAddress -> IO ()
+replyOk udp = flip (reply udp) (O.p_message "/ok" [])
 
-replyOK :: RemoteAddress -> CI ()
-replyOK = flip reply (O.p_message "/ok" [])
+replyError :: O.Udp -> RemoteAddress -> String -> IO ()
+replyError udp remote err = reply udp remote (O.p_message "/error" [utf8String err])
 
-replyOKVal :: RemoteAddress -> String -> CI ()
-replyOKVal remote str = reply remote (O.p_message "/ok" [utf8String str])
+replyEvalVal :: O.Udp -> RemoteAddress -> String -> IO ()
+replyEvalVal udp remote str = reply udp remote (O.p_message "/eval/value" [utf8String str])
 
-replyError :: RemoteAddress -> String -> CI ()
-replyError remote err = reply remote (O.p_message "/error" [utf8String err])
+replyEvalOk :: O.Udp -> RemoteAddress -> IO ()
+replyEvalOk udp remote = reply udp remote (O.p_message "/eval/ok" [])
 
-replyErrorEnv :: Environment -> RemoteAddress -> String -> IO ()
-replyErrorEnv env remote err = O.sendTo udp msg remote
-  where
-    msg = O.p_message "/error" [utf8String err]
-    udp = sLocal $ tStream env
+replyEvalError :: O.Udp -> RemoteAddress -> String -> IO ()
+replyEvalError udp remote err = reply udp remote (O.p_message "/eval/error" [utf8String err])
 
 utf8String :: String -> O.Datum
 utf8String s = O.AsciiString $ encodeUtf8 $ T.pack s
@@ -58,5 +57,11 @@ utf8String s = O.AsciiString $ encodeUtf8 $ T.pack s
 toUTF8 :: O.Ascii -> String
 toUTF8 x = T.unpack $ decodeUtf8 x
 
-getUdp :: CI O.Udp
-getUdp = gets (sLocal . tStream)
+getUdp :: Environment -> O.Udp
+getUdp = sLocal . tStream
+
+listenerCompiler :: String -> CI (String, Environment)
+listenerCompiler stat = do
+  x <- compilerInterpreterBasic (T.pack stat)
+  env <- get
+  return (x, env)
